@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Clear loading message
       activitiesList.innerHTML = "";
+      activitySelect.innerHTML = '<option value="">-- Select an activity --</option>';
 
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
@@ -20,10 +21,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
-        // Add sample data to participants list
-        const participantsList = Array.isArray(details.participants) && details.participants.length > 0
-          ? details.participants.map((participant) => `<li>${participant}</li>`).join("")
-          : "<li>John Doe</li><li>Jane Smith</li>";
+        // Build participants list with delete icon
+        let participantsList = "";
+        if (Array.isArray(details.participants) && details.participants.length > 0) {
+          participantsList = details.participants.map((participant) => `
+            <span class="participant-item" style="display: inline-flex; align-items: center; margin-right: 8px; margin-bottom: 5px;">
+              <span>${participant}</span>
+              <button class="delete-participant-btn" title="Remove participant" data-activity="${encodeURIComponent(name)}" data-email="${encodeURIComponent(participant)}" style="background: none; border: none; color: #c62828; cursor: pointer; font-size: 18px; margin-left: 4px;">
+                &#128465;
+              </button>
+            </span>
+          `).join("");
+        } else {
+          participantsList = `<span class="participant-item">No participants</span>`;
+        }
 
         activityCard.innerHTML = `
           <h4>${name}</h4>
@@ -32,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
           <div class="participants-section">
             <strong>Participants:</strong>
-            <ul>${participantsList}</ul>
+            <div class="participants-list" style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px;">${participantsList}</div>
           </div>
         `;
 
@@ -50,6 +61,36 @@ document.addEventListener("DOMContentLoaded", () => {
         option.value = name;
         option.textContent = name;
         activitySelect.appendChild(option);
+      });
+
+      // Add event listeners for delete buttons
+      document.querySelectorAll('.delete-participant-btn').forEach((btn) => {
+        btn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          const activity = decodeURIComponent(btn.getAttribute('data-activity'));
+          const email = decodeURIComponent(btn.getAttribute('data-email'));
+          if (!confirm(`Remove ${email} from ${activity}?`)) return;
+          try {
+            const response = await fetch(`/activities/${encodeURIComponent(activity)}/unregister?email=${encodeURIComponent(email)}`, {
+              method: 'POST',
+            });
+            const result = await response.json();
+            if (response.ok) {
+              messageDiv.textContent = result.message;
+              messageDiv.className = "success";
+              fetchActivities();
+            } else {
+              messageDiv.textContent = result.detail || "An error occurred";
+              messageDiv.className = "error";
+            }
+            messageDiv.classList.remove("hidden");
+            setTimeout(() => messageDiv.classList.add("hidden"), 5000);
+          } catch (error) {
+            messageDiv.textContent = "Failed to remove participant. Please try again.";
+            messageDiv.className = "error";
+            messageDiv.classList.remove("hidden");
+          }
+        });
       });
     } catch (error) {
       activitiesList.innerHTML = "<p>Failed to load activities. Please try again later.</p>";
