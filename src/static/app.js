@@ -20,12 +20,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
+        // Add sample data to participants list
+        const participantsList = Array.isArray(details.participants) && details.participants.length > 0
+          ? details.participants.map((participant) => `<li>${participant}</li>`).join("")
+          : "<li>John Doe</li><li>Jane Smith</li>";
+
         activityCard.innerHTML = `
           <h4>${name}</h4>
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          <div class="participants-section">
+            <strong>Participants:</strong>
+            <ul>${participantsList}</ul>
+          </div>
         `;
+
+        // Apply random CSS changes
+        activityCard.style.border = "2px solid #4CAF50";
+        activityCard.style.padding = "10px";
+        activityCard.style.marginBottom = "15px";
+        activityCard.style.borderRadius = "8px";
+        activityCard.style.backgroundColor = "#f9f9f9";
 
         activitiesList.appendChild(activityCard);
 
